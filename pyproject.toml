@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "carla-determinism"
+version = "1.0.0"
+description = "Measured operating rules for deterministic CARLA measurement, and the preflight that enforces them"
+requires-python = ">=3.8"
+# carla is deliberately NOT a dependency: it ships as a versioned wheel/egg per CARLA
+# release and every study pins its own. This package imports it lazily, inside the one
+# function that needs it, so the lock check and the /proc preflight work without it.
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+carla_determinism = ["RULES.md", "RULES.lock"]
