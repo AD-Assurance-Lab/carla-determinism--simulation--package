@@ -5,6 +5,7 @@ import subprocess
 import sys
 
 import carla_determinism as cd
+import carla_determinism.preflight
 
 
 def test_lock_matches_shipped_rules():
@@ -50,3 +51,32 @@ def test_cli_exits_nonzero_on_violation():
                         "--port", "59999"], capture_output=True, text=True)
     assert p.returncode == 1
     assert "PREFLIGHT FAILED" in p.stdout
+
+
+def _fake_argv(extra):
+    """A plausible CARLA command line, so the parsing is tested rather than the launcher."""
+    return ["/home/x/carla/CarlaUE4/Binaries/Linux/CarlaUE4-Linux-Shipping", "CarlaUE4",
+            "-carla-rpc-port=3000", "-RenderOffScreen"] + extra
+
+
+def test_server_present_but_missing_notexturestreaming_is_a_violation(monkeypatch):
+    """The branch that matters most: a server that answers RPC perfectly normally and
+    is quietly noisier. This is the one a person cannot see."""
+    monkeypatch.setattr(cd.preflight, "server_cmdline",
+                        lambda port: _fake_argv(["-quality-level=Epic"]))
+    problems = cd.check_server(port=3000, in_run=False)
+    assert any(p.startswith("D-3") for p in problems), problems
+    assert not any(p.startswith("D-5") for p in problems), problems
+
+
+def test_wrong_quality_level_is_a_violation(monkeypatch):
+    monkeypatch.setattr(cd.preflight, "server_cmdline",
+                        lambda port: _fake_argv(["-quality-level=Low", "-notexturestreaming"]))
+    problems = cd.check_server(port=3000, in_run=False)
+    assert any(p.startswith("D-5") and "Low" in p for p in problems), problems
+
+
+def test_compliant_server_passes(monkeypatch):
+    monkeypatch.setattr(cd.preflight, "server_cmdline",
+                        lambda port: _fake_argv(["-quality-level=Epic", "-notexturestreaming"]))
+    assert cd.check_server(port=3000, deterministic_control=True, in_run=False) == []
