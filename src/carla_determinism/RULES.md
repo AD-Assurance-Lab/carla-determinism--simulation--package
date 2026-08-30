@@ -126,3 +126,37 @@ A rule changes only by: stating what measurement contradicts it, recording that
 measurement in the study's findings file, changing the rule, regenerating the lock in the
 same commit, and naming the amendment here. A rule may not be relaxed because a run is
 inconvenient. Amendments so far: none.
+
+---
+
+## 5. Session hygiene (NOT part of the frozen section)
+
+Deliberately outside §2 and outside the lock. §2 is about how a server must be
+*configured*; these are about *which* server you are measuring on, and they are
+enforced in code (`carla_determinism.hygiene`) rather than frozen as rules. Adding
+them to §2 would need the §4 amendment procedure and Zach's request; this section
+does not, because it changes no frozen rule.
+
+**Why they exist.** Both were prose in each repo, re-typed into each new driver, and
+both drifted the moment a driver was added. Measured in
+`formal-verification--steering--code` on 2026-08-30:
+
+* one capture driver restarted before every capture; its sibling restarted **not at
+  all** and took all 24 verification captures behind a deployment-test certificate in
+  a single server session;
+* a killed capture left its vehicle and camera alive -- SIGTERM does not run Python
+  cleanup -- and the next capture rendered a road with a parked car on it.
+
+Neither is visible downstream. The arrays are the right shape and full of plausible
+frames.
+
+    cd.require_measurable(port, world)   # fresh server + empty world + clean exit
+
+`require_fresh_server` refuses a server older than an hour (it leaks ~10.5 GiB over
+11 h, and a degraded one keeps answering while physics stops advancing).
+`require_clean_world` refuses a world that already holds actors.
+`install_cleanup_handlers` makes SIGTERM unwind so `finally` blocks run.
+
+**Call it from the choke point every measurement passes through** -- whatever enables
+synchronous mode or spawns the vehicle -- never from each driver script. A rule
+enforced by copying is a rule that drifts; that is the whole lesson of this section.

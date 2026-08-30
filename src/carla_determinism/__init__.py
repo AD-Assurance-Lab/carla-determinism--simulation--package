@@ -17,6 +17,9 @@ from pathlib import Path
 
 from ._lock import RULES, LOCK, check_lock, digest, frozen_text, write_lock
 from .control import apply_control, bind_client, get_client
+from .hygiene import (DEFAULT_MAX_SERVER_AGE_S, install_cleanup_handlers,
+                      require_clean_world, require_fresh_server, require_measurable,
+                      server_age_s)
 from .preflight import check_server, require_deterministic, server_cmdline
 
 __version__ = "1.0.0"
@@ -27,4 +30,10 @@ __all__ = [
     "require_deterministic", "check_server", "server_cmdline",
     "check_lock", "digest", "frozen_text", "write_lock",
     "RULES_PATH", "RULES", "LOCK", "__version__",
+    "require_measurable",
+    "require_fresh_server",
+    "require_clean_world",
+    "install_cleanup_handlers",
+    "server_age_s",
+    "DEFAULT_MAX_SERVER_AGE_S",
 ]
