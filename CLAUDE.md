@@ -1,30 +1,36 @@
-# CLAUDE.md — carla-determinism
+# carla-determinism
 
-A pip-installable package carrying the lab's CARLA determinism rules and the preflight
-that enforces them. Consumed by every repo that drives CARLA.
+A pip-installable package. It carries the lab's CARLA determinism rules and the
+preflight that enforces them. Every repository that drives CARLA uses it.
 
-**`src/carla_determinism/RULES.md` is the content.** Read it before changing anything
-here. It is hash-locked by `RULES.lock`.
+`src/carla_determinism/RULES.md` is the content. Read it before you change
+anything here. `RULES.lock` hash-locks it.
 
-## Rules for working in this repo
+## Rules for this repository
 
-- **Do not edit the frozen section of `RULES.md` without the amendment procedure**
-  (its section 4): state the contradicting measurement, record it in the study's findings
-  file, change the rule, regenerate the lock in the SAME commit. `pytest` fails otherwise,
-  which is deliberate.
-- **Never make the preflight lenient to unblock a run.** The whole value is that it
-  refuses. If it is wrong, fix the check or amend the rule; do not add an escape hatch.
-- **This package must not import any study's config.** Study-specific values
-  (`fixed_dt`, port, whether deterministic control is on) are parameters. A package that
-  reaches into one study's config cannot be shared by studies whose timesteps differ.
-- **`carla` is not a dependency** and must stay that way — it ships per CARLA release and
-  each study pins its own. Import it lazily, inside the function that needs it, so the
-  lock check and the /proc preflight work without it installed.
-- Tests must prove the checks can FAIL, not just pass. Rule D-9 exists because a probe
-  that could not fail reported the opposite of the truth and was believed for a day.
+**Do not edit the frozen part of `RULES.md` without the amendment procedure** in
+its section 4. State the measurement that contradicts the rule. Record it in the
+study's findings file. Change the rule. Regenerate the lock in the same commit.
+`pytest` fails if you do not. That is deliberate.
 
-## Releasing
+**Never make the preflight lenient to unblock a run.** Its value is that it
+refuses. If a check is wrong, fix the check or amend the rule. Do not add an
+escape hatch.
 
-Bump `__version__` in `__init__.py` and `version` in `pyproject.toml` together, tag
-`vX.Y.Z`, and update the pin in each consuming repo's `requirements.txt` deliberately —
-consumers pin an exact tag so a rule change can never arrive silently mid-study.
+**Do not import any study's config.** The fixed timestep, the port and the
+deterministic-control switch are parameters. Studies use different timesteps, so
+a package that reads one study's config cannot be shared.
+
+**Do not depend on `carla`.** It ships with each CARLA release, and each study
+pins its own. Import it inside the function that needs it. The lock check and the
+preflight then work without it.
+
+**Tests must show that a check can fail.** A probe that could not fail once
+reported the opposite of the truth, and the lab believed it for a day (D-9).
+
+## To release
+
+Change `__version__` in `__init__.py` and `version` in `pyproject.toml` together.
+Tag `vX.Y.Z`. Then update the pin in each consuming repository's
+`requirements.txt` on purpose. Consumers pin an exact tag, so a rule change
+cannot arrive silently in the middle of a study.
