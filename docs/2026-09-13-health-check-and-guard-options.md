@@ -4,14 +4,21 @@ Written after a read of the package, its tests, and the four study repositories 
 this machine that use it. Sections 1 to 4 record what was found and what was
 recommended, as written before any change.
 
-**Status, later the same day.** Steps 1 to 3 of section 4 are done in this repository,
-as three tagged releases: v1.1.0 (version string, exact port match, pytest scope),
-v1.2.0 (`pin_torch`, `check_torch`, `provenance`), v1.3.0 (launcher, D-4 and D-6
-checks, audit with pre-commit hook, Claude Code hook). The consumer-side work in step 1
-(the steering pin, `require_measurable` in its sync-mode helper, the verifier-scaling
-reinstall) and the per-repository hook installation in step 4 are not done here. The
-D-7 amendment request stays open; the AEB study is being rebuilt by its researcher, and
-no action is needed on it now.
+**Status, later the same day.** Everything in section 4 is done, and the AEB study
+is left alone (its researcher is rebuilding it). Releases: v1.1.0 (version string,
+exact port match, pytest scope), v1.2.0 (`pin_torch`, `check_torch`, `provenance`),
+v1.3.0 (launcher, D-4 and D-6 checks, audit, Claude Code hook), v1.3.1 (Bool blueprint
+attributes, `exempt-dependency`), v1.3.2 (the pre-commit hook finds its interpreter).
+All are pushed. Every new check ran against the live server on this machine: launch,
+reuse, refuse, restart, windowed and headless, the photometry gate, camera D-4, client
+count D-6, hygiene, D-1 in sync mode, an acknowledged command with readback.
+
+Study repositories: steering and verifier-scaling pin v1.3.2, call
+`require_measurable` from `enable_sync_mode`, have no skip variable, and their
+`carla_launch.sh` builds the command line through the package. Multi-condition pins
+v1.3.2 in `requirements.txt`. All four carry a `.carla-determinism-audit` file and the
+pre-commit hook, and all four audit clean. The Claude Code hook is installed in
+`~/.claude/settings.json` through a small venv at `~/.local/share/carla-determinism-hook`.
 
 ## 1. Is the package running correctly?
 
