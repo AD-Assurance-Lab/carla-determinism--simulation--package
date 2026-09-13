@@ -17,3 +17,8 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 carla_determinism = ["RULES.md", "RULES.lock"]
+
+[tool.pytest.ini_options]
+# Only tests/. A walk of src/ once let a foreign pytest plugin import the package
+# from the checkout, and the suite went green with nothing installed (D-9).
+testpaths = ["tests"]

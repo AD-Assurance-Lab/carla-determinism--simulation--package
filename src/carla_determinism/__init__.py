@@ -20,14 +20,16 @@ from .control import apply_control, bind_client, get_client
 from .hygiene import (DEFAULT_MAX_SERVER_AGE_S, install_cleanup_handlers,
                       require_clean_world, require_fresh_server, require_measurable,
                       server_age_s)
-from .preflight import check_server, require_deterministic, server_cmdline
+from .preflight import (carla_processes, check_server, require_deterministic,
+                        server_cmdline, server_pid, serves_port)
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 RULES_PATH = Path(RULES)
 
 __all__ = [
     "apply_control", "bind_client", "get_client",
-    "require_deterministic", "check_server", "server_cmdline",
+    "require_deterministic", "check_server", "server_cmdline", "server_pid",
+    "carla_processes", "serves_port",
     "check_lock", "digest", "frozen_text", "write_lock",
     "RULES_PATH", "RULES", "LOCK", "__version__",
     "require_measurable",

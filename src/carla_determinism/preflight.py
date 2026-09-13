@@ -16,13 +16,8 @@ REQUIRED_LAUNCH = ("-notexturestreaming",)   # D-3
 REQUIRED_QUALITY = "Epic"                    # D-5
 
 
-def server_cmdline(port):
-    """Launch arguments of the CARLA serving `port`, from /proc.
-
-    Matched on the rpc-port, never on the process name: kill-and-match-by-name has
-    already taken down another user's simulator once, and a second server on another
-    port must never be mistaken for this one.
-    """
+def carla_processes():
+    """Yield (pid, argv) for every CarlaUE4 process in /proc."""
     for pid in os.listdir("/proc"):
         if not pid.isdigit():
             continue
@@ -31,9 +26,37 @@ def server_cmdline(port):
                 argv = fh.read().decode(errors="replace").split("\0")
         except OSError:
             continue
-        if not argv or "CarlaUE4" not in argv[0]:
-            continue
-        if any(f"-carla-rpc-port={port}" in a for a in argv):
+        if argv and "CarlaUE4" in argv[0]:
+            yield int(pid), argv
+
+
+def serves_port(argv, port):
+    """True if this command line names `port` as its rpc-port, exactly.
+
+    Exact, not a substring: `-carla-rpc-port=300` is contained in
+    `-carla-rpc-port=3000`, and a wrong-server match is the worst kind of wrong.
+    """
+    want = f"-carla-rpc-port={port}"
+    return any(a.strip() == want for a in argv)
+
+
+def server_pid(port):
+    """PID of the CARLA serving `port`, or None."""
+    for pid, argv in carla_processes():
+        if serves_port(argv, port):
+            return pid
+    return None
+
+
+def server_cmdline(port):
+    """Launch arguments of the CARLA serving `port`, from /proc.
+
+    Matched on the rpc-port, never on the process name: kill-and-match-by-name has
+    already taken down another user's simulator once, and a second server on another
+    port must never be mistaken for this one.
+    """
+    for _pid, argv in carla_processes():
+        if serves_port(argv, port):
             return argv
     return None
 

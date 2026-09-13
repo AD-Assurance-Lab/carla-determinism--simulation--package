@@ -47,7 +47,7 @@ def test_require_deterministic_raises_on_violation():
 
 
 def test_cli_exits_nonzero_on_violation():
-    p = subprocess.run([sys.executable, "-m", "carla_determinism.preflight",
+    p = subprocess.run([sys.executable, "-m", "carla_determinism",
                         "--port", "59999"], capture_output=True, text=True)
     assert p.returncode == 1
     assert "PREFLIGHT FAILED" in p.stdout
@@ -80,3 +80,12 @@ def test_compliant_server_passes(monkeypatch):
     monkeypatch.setattr(cd.preflight, "server_cmdline",
                         lambda port: _fake_argv(["-quality-level=Epic", "-notexturestreaming"]))
     assert cd.check_server(port=3000, deterministic_control=True, in_run=False) == []
+
+
+def test_port_match_is_exact_not_substring(monkeypatch):
+    """A request for port 300 must not match a server on 3000."""
+    monkeypatch.setattr(cd.preflight, "carla_processes",
+                        lambda: iter([(4242, _fake_argv(["-quality-level=Epic"]))]))
+    assert cd.server_cmdline(3000) is not None
+    assert cd.server_cmdline(300) is None
+    assert cd.preflight.server_pid(300) is None

@@ -32,23 +32,19 @@ def server_age_s(port):
     Read from /proc rather than asked over RPC: a degraded server answers RPC perfectly
     well, which is the entire problem.
     """
-    for pid in os.listdir("/proc"):
-        if not pid.isdigit():
-            continue
-        try:
-            with open(f"/proc/{pid}/cmdline", "rb") as fh:
-                cmd = fh.read().decode("utf-8", "replace")
-            if "CarlaUE4" not in cmd or f"carla-rpc-port={port}" not in cmd:
-                continue
-            with open("/proc/uptime") as fh:
-                uptime = float(fh.read().split()[0])
-            with open(f"/proc/{pid}/stat") as fh:
-                starttime = float(fh.read().rsplit(")", 1)[1].split()[19])
-            hz = os.sysconf("SC_CLK_TCK")
-            return max(0.0, uptime - starttime / hz)
-        except (OSError, IndexError, ValueError):
-            continue
-    return None
+    from .preflight import server_pid
+    pid = server_pid(port)
+    if pid is None:
+        return None
+    try:
+        with open("/proc/uptime") as fh:
+            uptime = float(fh.read().split()[0])
+        with open(f"/proc/{pid}/stat") as fh:
+            starttime = float(fh.read().rsplit(")", 1)[1].split()[19])
+    except (OSError, IndexError, ValueError):
+        return None
+    hz = os.sysconf("SC_CLK_TCK")
+    return max(0.0, uptime - starttime / hz)
 
 
 def require_fresh_server(port, max_age_s=DEFAULT_MAX_SERVER_AGE_S):

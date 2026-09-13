@@ -30,11 +30,22 @@ Neither is visible in a result. Both trajectories look physically plausible.
 
 ## Install
 
-    pip install git+https://github.com/AD-Assurance-Lab/carla-determinism--simulation--package@v1.0.0
+    pip install git+https://github.com/AD-Assurance-Lab/carla-determinism--simulation--package@v1.1.0
 
 Or, for local development against a checkout beside your study repo:
 
     pip install -e ../carla-determinism--simulation--package
+
+## Tests
+
+Install the package into a venv first, then run pytest from that venv:
+
+    pip install -e .
+    python -m pytest
+
+Do not trust a run from an interpreter that does not have the package installed. On a
+machine with ROS on `PYTHONPATH`, a pytest plugin once imported the package from the
+checkout as a side effect and the suite went green with nothing installed (D-9).
 
 ## Use
 
