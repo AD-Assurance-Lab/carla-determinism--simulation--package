@@ -1,8 +1,17 @@
 # Health check and guard options, 2026-09-13
 
 Written after a read of the package, its tests, and the four study repositories on
-this machine that use it. Nothing in the package was changed. This file records what
-was found and what to do about it.
+this machine that use it. Sections 1 to 4 record what was found and what was
+recommended, as written before any change.
+
+**Status, later the same day.** Steps 1 to 3 of section 4 are done in this repository,
+as three tagged releases: v1.1.0 (version string, exact port match, pytest scope),
+v1.2.0 (`pin_torch`, `check_torch`, `provenance`), v1.3.0 (launcher, D-4 and D-6
+checks, audit with pre-commit hook, Claude Code hook). The consumer-side work in step 1
+(the steering pin, `require_measurable` in its sync-mode helper, the verifier-scaling
+reinstall) and the per-repository hook installation in step 4 are not done here. The
+D-7 amendment request stays open; the AEB study is being rebuilt by its researcher, and
+no action is needed on it now.
 
 ## 1. Is the package running correctly?
 

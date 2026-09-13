@@ -28,6 +28,16 @@ preflight then work without it.
 **Tests must show that a check can fail.** A probe that could not fail once
 reported the opposite of the truth, and the lab believed it for a day (D-9).
 
+**Run the tests from a venv that has the package installed.** The system `python3`
+carries ROS on `PYTHONPATH`, and a ROS pytest plugin once imported the package from
+the checkout, so the suite went green with nothing installed.
+
+**Modules.** `preflight` checks a live server. `hygiene` checks which server. `control`
+routes the vehicle command. `cuda` pins and checks torch. `provenance` records the
+harness. `launcher` starts the server with the flags. `audit` checks a repository's
+code. `cli` wires the commands. Import `carla` and `torch` inside the function that
+needs them.
+
 ## To release
 
 Change `__version__` in `__init__.py` and `version` in `pyproject.toml` together.

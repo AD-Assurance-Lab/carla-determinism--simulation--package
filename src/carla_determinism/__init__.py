@@ -8,6 +8,8 @@ this is not one of them. It is an internal operating procedure for our own simul
     client = carla.Client(host, port)
     cd.bind_client(client)
     cd.require_deterministic(port, world, fixed_dt=0.2, deterministic_control=True)
+    cd.require_measurable(port, world)
+    cd.require_camera(camera_blueprint)      # before spawning it
     ...
     cd.apply_control(vehicle, control)
 
@@ -24,13 +26,16 @@ from .control import apply_control, bind_client, get_client
 from .cuda import check_torch, pin_torch, require_torch, torch_provenance
 from .hygiene import (DEFAULT_MAX_SERVER_AGE_S, install_cleanup_handlers,
                       require_clean_world, require_fresh_server, require_measurable,
-                      server_age_s)
+                      require_sole_client, server_age_s)
+from .launcher import launch, launch_argv, restart, stop, wait_ready
 from . import provenance as provenance_module
 from .provenance import provenance
-from .preflight import (carla_processes, check_server, require_deterministic,
+from .preflight import (carla_processes, check_camera, check_server, client_count,
+                        port_listening, require_camera, require_deterministic,
                         server_cmdline, server_pid, serves_port)
+from .audit import audit as audit_repo
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 RULES_PATH = Path(RULES)
 
 __all__ = [
@@ -47,4 +52,8 @@ __all__ = [
     "DEFAULT_MAX_SERVER_AGE_S",
     "pin_torch", "check_torch", "require_torch", "torch_provenance",
     "provenance",
+    "check_camera", "require_camera", "client_count", "port_listening",
+    "require_sole_client",
+    "launch", "launch_argv", "restart", "stop", "wait_ready",
+    "audit_repo",
 ]

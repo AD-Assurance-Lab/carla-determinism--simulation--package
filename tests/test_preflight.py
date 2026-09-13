@@ -89,3 +89,75 @@ def test_port_match_is_exact_not_substring(monkeypatch):
     assert cd.server_cmdline(3000) is not None
     assert cd.server_cmdline(300) is None
     assert cd.preflight.server_pid(300) is None
+
+
+class _Attr:
+    def __init__(self, v):
+        self._v = v
+
+    def as_str(self):
+        return self._v
+
+
+class _Blueprint:
+    def __init__(self, **attrs):
+        self._a = attrs
+
+    def has_attribute(self, name):
+        return name in self._a
+
+    def get_attribute(self, name):
+        return _Attr(self._a[name])
+
+
+def test_camera_with_postprocess_on_and_manual_exposure_passes():
+    bp = _Blueprint(enable_postprocess_effects="true", exposure_mode="manual")
+    assert cd.check_camera(bp) == []
+
+
+def test_camera_with_postprocess_off_is_a_violation():
+    bp = _Blueprint(enable_postprocess_effects="false", exposure_mode="manual")
+    assert any(p.startswith("D-4") and "postprocess" in p for p in cd.check_camera(bp))
+
+
+def test_camera_with_auto_exposure_is_a_violation():
+    bp = _Blueprint(enable_postprocess_effects="true", exposure_mode="histogram")
+    assert any(p.startswith("D-4") and "exposure_mode" in p for p in cd.check_camera(bp))
+
+
+def test_camera_missing_attribute_is_reported_not_passed():
+    assert cd.check_camera(_Blueprint()) != []
+
+
+def test_require_camera_raises():
+    bp = _Blueprint(enable_postprocess_effects="false", exposure_mode="manual")
+    try:
+        cd.require_camera(bp)
+    except SystemExit as exc:
+        assert "D-4" in str(exc)
+    else:
+        raise AssertionError("require_camera did not raise")
+
+
+_TCP = [(cd.preflight.TCP_LISTEN, 3000, 0),
+        (cd.preflight.TCP_ESTABLISHED, 3000, 51000),
+        (cd.preflight.TCP_ESTABLISHED, 3000, 51002),
+        (cd.preflight.TCP_ESTABLISHED, 51000, 3000),     # the client side of one of them
+        (cd.preflight.TCP_ESTABLISHED, 3001, 51004)]     # the streaming port, not rpc
+
+
+def test_client_count_counts_established_connections_into_the_port():
+    assert cd.client_count(3000, entries=_TCP) == 2
+    assert cd.client_count(2000, entries=_TCP) == 0
+    assert cd.port_listening(3000, entries=_TCP) and not cd.port_listening(2000, entries=_TCP)
+
+
+def test_sole_client_refuses_a_second_client(monkeypatch):
+    monkeypatch.setattr(cd.preflight, "client_count", lambda port: 2)
+    try:
+        cd.require_sole_client(3000, expected=1)
+    except RuntimeError as exc:
+        assert "REFUSING" in str(exc) and "D-6" in str(exc)
+    else:
+        raise AssertionError("require_sole_client did not refuse")
+    assert cd.require_sole_client(3000, expected=2) == 2

@@ -30,7 +30,7 @@ Neither is visible in a result. Both trajectories look physically plausible.
 
 ## Install
 
-    pip install git+https://github.com/AD-Assurance-Lab/carla-determinism--simulation--package@v1.2.0
+    pip install git+https://github.com/AD-Assurance-Lab/carla-determinism--simulation--package@v1.3.0
 
 Or, for local development against a checkout beside your study repo:
 
@@ -67,9 +67,53 @@ checkout as a side effect and the suite went green with nothing installed (D-9).
     # into every artifact, so D-11 can be enforced later
     stamp = cd.provenance(port, world, deterministic_control=True)
 
+Before spawning a camera, and when you know how many clients should hold the port:
+
+    cd.require_camera(camera_blueprint)          # D-4: post-process on, exposure manual
+    cd.require_sole_client(port, expected=1)     # D-6: nothing else can tick the world
+
 Command line:
 
-    python3 -m carla_determinism --port 3000
+    python3 -m carla_determinism --port 3000                    # preflight a live server
+    python3 -m carla_determinism launch --port 3000 --map Town04 # start one with the flags
+    python3 -m carla_determinism restart --port 3000 --map Town04
+    python3 -m carla_determinism stop --port 3000
+    python3 -m carla_determinism provenance --port 3000         # the harness, as JSON
+    python3 -m carla_determinism audit .                        # static audit, exit 1
+
+## Guards
+
+Four layers. Each catches a different way of being wrong.
+
+1. **The preflight at the choke point.** Call `require_deterministic` and
+   `require_measurable` from the one function that enables synchronous mode. A new
+   driver cannot skip it.
+2. **The launcher.** Start the server only through `python3 -m carla_determinism
+   launch`, or through a launcher the repository declares. The flags cannot go missing.
+3. **The audit, as a pre-commit hook and in CI.** `python3 -m carla_determinism audit
+   --install-hook` writes `.git/hooks/pre-commit`. Put a `.carla-determinism-audit`
+   file at the repository root for its allowances:
+
+        allow-receiver env                          # this repo's choke point
+        launcher scripts/simulator/carla_launch.sh
+
+4. **A Claude Code hook.** Add to `~/.claude/settings.json`, and a session cannot start
+   CarlaUE4 by hand:
+
+        {
+          "hooks": {
+            "PreToolUse": [
+              {
+                "matcher": "Bash",
+                "hooks": [
+                  {"type": "command", "command": "python3 -m carla_determinism claude-hook"}
+                ]
+              }
+            ]
+          }
+        }
+
+   The `python3` on the session's PATH must have the package installed.
 
 ## What it does NOT give you
 

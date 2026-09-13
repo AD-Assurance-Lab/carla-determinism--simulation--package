@@ -87,6 +87,26 @@ def require_clean_world(world):
     return True
 
 
+def require_sole_client(port, expected=1):
+    """D-6 as a check: refuse when more connections than `expected` hold the port.
+
+    Opt-in, with the expectation stated by the caller, because the count depends on
+    what the caller has created: 0 before its client exists, 1 after, 2 with a traffic
+    manager. A rule that guesses would give false positives, and false positives train
+    people to ignore the check. In synchronous mode every connection can tick the world.
+    """
+    from .preflight import client_count
+    n = client_count(port)
+    if n > expected:
+        raise RuntimeError(
+            f"REFUSING to measure: {n} client(s) are connected to port {port}, "
+            f"expected at most {expected}.\n"
+            "    In synchronous mode any connected client's tick() advances the world,\n"
+            "    so two processes on one server corrupt each other while both appear\n"
+            "    to work (D-6). Find the other process, or restart the server.")
+    return n
+
+
 def install_cleanup_handlers():
     """Make SIGTERM and SIGINT unwind normally so `finally` blocks actually run.
 

@@ -196,3 +196,46 @@ command line and age, the D-1 world settings, and the torch, CUDA, cuDNN, driver
 GPU versions with the pin state. Unknown is recorded as None, never as False. Write it
 into every artifact. The steering notes record that a GPU migration flipped one
 marginal cell of eight; without this record that cannot be seen afterwards.
+
+---
+
+## 7. Launcher, audit and hooks (NOT part of the frozen section)
+
+Also outside the lock. These change how a rule is *enforced*, not what it says.
+
+**The launcher lives here.** The steering study had eight places that started the
+server and seven lacked `-notexturestreaming`. One launcher in that repo fixed that
+repo, and the others then called it by an absolute path into that checkout. So:
+
+    python3 -m carla_determinism launch  --port 3000 --map Town04 [--windowed]
+    python3 -m carla_determinism restart --port 3000 --map Town04
+    python3 -m carla_determinism stop    --port 3000
+
+`launch` refuses an occupied port, starts the server with the D-3 and D-5 flags,
+waits until `get_world()` answers rather than until the port binds, loads the map, and
+runs the preflight against the real `/proc` command line. `--extra` may add UE4 flags
+and cannot remove a rule flag. Study gates, such as a photometry reference, run in the
+study after `launch` returns 0.
+
+**D-4 and D-6 now have checks.** `require_camera(blueprint)` refuses a camera whose
+post-processing is off or whose exposure is not manual, at the one moment those can be
+read. `require_sole_client(port, expected)` refuses when more connections than the
+caller expects hold the port; the caller states the expectation because a traffic
+manager holds one of its own, and a guess would give false positives.
+
+**The audit catches the code before the run.**
+
+    python3 -m carla_determinism audit .                 # exit 1 on a finding
+    python3 -m carla_determinism audit --install-hook    # as a git pre-commit hook
+
+A-1 is a raw `.apply_control(` outside the package (D-2). A-2 is CarlaUE4 started
+outside a declared launcher (D-3, D-5). A-3 is `CARLA_SKIP_PREFLIGHT`. A-4 is a
+dependency on this package that is missing or not pinned to an exact tag. Allowances
+live in `.carla-determinism-audit` at the repository root, or on one line as
+`# carla-determinism: allow, <reason>`. An allowance is visible in the diff. An
+escape hatch in the environment is not.
+
+**A Claude Code hook refuses a hand launch.** `python3 -m carla_determinism
+claude-hook` reads the PreToolUse payload and exits 2 when a Bash command would start
+CarlaUE4 outside a launcher. One entry in `~/.claude/settings.json` covers every
+repository on the machine. See the README for the entry.

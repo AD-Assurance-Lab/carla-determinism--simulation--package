@@ -61,6 +61,88 @@ def server_cmdline(port):
     return None
 
 
+def tcp_entries():
+    """(state, local_port, remote_port) for every IPv4 and IPv6 socket in /proc."""
+    out = []
+    for path in ("/proc/net/tcp", "/proc/net/tcp6"):
+        try:
+            with open(path) as fh:
+                lines = fh.read().splitlines()[1:]
+        except OSError:
+            continue
+        for line in lines:
+            f = line.split()
+            if len(f) < 4:
+                continue
+            try:
+                out.append((f[3], int(f[1].rsplit(":", 1)[1], 16),
+                            int(f[2].rsplit(":", 1)[1], 16)))
+            except (IndexError, ValueError):
+                continue
+    return out
+
+
+TCP_ESTABLISHED, TCP_LISTEN = "01", "0A"
+
+
+def port_listening(port, entries=None):
+    entries = tcp_entries() if entries is None else entries
+    return any(st == TCP_LISTEN and lp == port for st, lp, _rp in entries)
+
+
+def client_count(port, entries=None):
+    """Established connections INTO `port`. In synchronous mode every one of them can
+    tick the world (D-6). Note the traffic manager holds one of its own."""
+    entries = tcp_entries() if entries is None else entries
+    return sum(1 for st, lp, _rp in entries if st == TCP_ESTABLISHED and lp == port)
+
+
+def _bp_attr(bp, name):
+    """A camera blueprint attribute as a string, or None when it cannot be read."""
+    try:
+        if hasattr(bp, "has_attribute") and not bp.has_attribute(name):
+            return None
+        a = bp.get_attribute(name)
+    except Exception:
+        return None
+    try:
+        return a.as_str() if hasattr(a, "as_str") else str(a)
+    except Exception:
+        return None
+
+
+def check_camera(bp):
+    """D-4 against a camera blueprint, before it is spawned.
+
+    Post-processing must stay ON and exposure must be MANUAL. Manual exposure lives
+    inside the post-process chain, so turning the chain off silently un-pins it
+    [postprocess off measured ~2000x worse]. Both are blueprint attributes, so this is
+    the one moment they can be read.
+    """
+    problems = []
+    pp = _bp_attr(bp, "enable_postprocess_effects")
+    if pp is None:
+        problems.append("D-4: cannot read enable_postprocess_effects on this blueprint.")
+    elif pp.strip().lower() != "true":
+        problems.append(f"D-4: enable_postprocess_effects is {pp}; it must stay true, "
+                        f"or manual exposure is silently un-pinned.")
+    mode = _bp_attr(bp, "exposure_mode")
+    if mode is None:
+        problems.append("D-4: cannot read exposure_mode on this blueprint.")
+    elif mode.strip().lower() != "manual":
+        problems.append(f"D-4: exposure_mode is {mode}; it must be manual.")
+    return problems
+
+
+def require_camera(bp):
+    """Raise unless the camera blueprint satisfies D-4. Call before spawning it."""
+    problems = check_camera(bp)
+    if problems:
+        raise SystemExit(
+            "CARLA DETERMINISM PREFLIGHT FAILED -- refusing to spawn this camera.\n"
+            "See carla_determinism/RULES.md D-4.\n  " + "\n  ".join(problems))
+
+
 def check_server(port, world=None, fixed_dt=None, deterministic_control=None,
                  in_run=True):
     """Collect rule violations. Returns a list of strings; empty means compliant.
@@ -147,6 +229,9 @@ def main(argv=None):
         for p in problems:
             print(f"    - {p}")
         return 1
+    if args.lock_only:
+        print("  determinism lock OK (RULES.md frozen rules match RULES.lock)")
+        return 0
     print("  determinism preflight OK (lock intact; D-3/D-5 verified on the live server)")
     print("  D-7 floor remains: closed-loop numbers are still RATES over >=10 repetitions")
     return 0

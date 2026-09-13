@@ -54,4 +54,4 @@ def apply_control(vehicle, control, enabled=True):
         _CLIENT.apply_batch_sync(
             [carla.command.ApplyVehicleControl(vehicle.id, control)], False)
     else:
-        vehicle.apply_control(control)
+        vehicle.apply_control(control)   # carla-determinism: allow, the D-2 fallback

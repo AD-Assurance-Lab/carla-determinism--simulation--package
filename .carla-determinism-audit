@@ -1,0 +1,10 @@
+# This repository is the package itself. The launcher builds the command line, the
+# CLI hook matches it, the audit names the escape hatch it looks for, and the tests
+# quote every pattern to show each check can fail. The audit is for study repositories.
+launcher src/carla_determinism/launcher.py
+launcher src/carla_determinism/cli.py
+exempt src/carla_determinism/audit.py
+exempt tests/test_audit.py
+exempt tests/test_launcher.py
+exempt tests/test_preflight.py
+exempt tests/test_cuda.py
