@@ -160,3 +160,39 @@ frames.
 **Call it from the choke point every measurement passes through** -- whatever enables
 synchronous mode or spawns the vehicle -- never from each driver script. A rule
 enforced by copying is a rule that drifts; that is the whole lesson of this section.
+
+---
+
+## 6. Model determinism and provenance (NOT part of the frozen section)
+
+Outside §2 and outside the lock, for the same reason as §5: nothing here changes a
+frozen rule. §2 is about the simulator. This is about the model in the loop, and about
+the record that says which harness produced a number.
+
+**Why it exists.** A seed is not enough. Measured in `formal-verification--steering--code`
+(`docs/E2_FINDINGS.md`): three draws of "seed 0" on the same data and the same
+objective gave fog p99 |err| of 0.1027, 0.1427 and 0.1036, a 1.39x spread, as large as
+the spread across six different seeds. cuDNN picks kernels by autotuning, several
+backward kernels reduce in a data-dependent order, and cuBLAS is repeatable only when
+`CUBLAS_WORKSPACE_CONFIG` is set before its first handle exists. Inference had none of
+these pinned, so the policy in the loop was not shown to give the same output for the
+same frame.
+
+    cd.pin_torch(seed=0)      # configure, before the first CUDA call in the process
+    cd.require_torch()        # assert, before a measurement that runs a model
+
+`pin_torch` refuses when CUDA is already initialised and the cuBLAS variable is unset,
+because a pin that silently does nothing is worse than none. `check_torch` reports
+M-1 (deterministic algorithms off), M-2 (`cudnn.benchmark` on), M-3
+(`cudnn.deterministic` off) and M-4 (cuBLAS variable unset with CUDA present). A
+missing torch is reported, never passed.
+
+**Provenance.** D-11 is enforceable only if an artifact says which harness produced it.
+
+    stamp = cd.provenance(port, world, deterministic_control=True)
+
+returns the package version, the rules digest, the lock state, the server's real
+command line and age, the D-1 world settings, and the torch, CUDA, cuDNN, driver and
+GPU versions with the pin state. Unknown is recorded as None, never as False. Write it
+into every artifact. The steering notes record that a GPU migration flipped one
+marginal cell of eight; without this record that cannot be seen afterwards.

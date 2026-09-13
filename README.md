@@ -30,7 +30,7 @@ Neither is visible in a result. Both trajectories look physically plausible.
 
 ## Install
 
-    pip install git+https://github.com/AD-Assurance-Lab/carla-determinism--simulation--package@v1.1.0
+    pip install git+https://github.com/AD-Assurance-Lab/carla-determinism--simulation--package@v1.2.0
 
 Or, for local development against a checkout beside your study repo:
 
@@ -59,6 +59,13 @@ checkout as a side effect and the suite went green with nothing installed (D-9).
 
     # every driving loop, every study:
     cd.apply_control(vehicle, carla.VehicleControl(throttle=t, brake=b, steer=s))
+
+    # the model in the loop: pin before the first CUDA call, assert before measuring
+    cd.pin_torch(seed=0)
+    cd.require_torch()
+
+    # into every artifact, so D-11 can be enforced later
+    stamp = cd.provenance(port, world, deterministic_control=True)
 
 Command line:
 

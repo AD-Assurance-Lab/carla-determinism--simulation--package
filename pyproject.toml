@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "carla-determinism"
-version = "1.1.0"
+version = "1.2.0"
 description = "Measured operating rules for deterministic CARLA measurement, and the preflight that enforces them"
 requires-python = ">=3.8"
 # carla is deliberately NOT a dependency: it ships as a versioned wheel/egg per CARLA
