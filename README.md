@@ -30,7 +30,7 @@ Neither is visible in a result. Both trajectories look physically plausible.
 
 ## Install
 
-    pip install git+https://github.com/AD-Assurance-Lab/carla-determinism--simulation--package@v1.3.0
+    pip install git+https://github.com/AD-Assurance-Lab/carla-determinism--simulation--package@v1.3.1
 
 Or, for local development against a checkout beside your study repo:
 

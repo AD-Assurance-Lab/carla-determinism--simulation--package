@@ -98,17 +98,28 @@ def client_count(port, entries=None):
 
 
 def _bp_attr(bp, name):
-    """A camera blueprint attribute as a string, or None when it cannot be read."""
+    """A camera blueprint attribute as a lower-case string, or None when unreadable.
+
+    CARLA casts strictly: as_str() on a Bool attribute raises. Measured on 0.9.16,
+    where enable_postprocess_effects is Bool and exposure_mode is String. So try each
+    cast, and fall back to the value= field of the attribute's own repr.
+    """
     try:
         if hasattr(bp, "has_attribute") and not bp.has_attribute(name):
             return None
         a = bp.get_attribute(name)
     except Exception:
         return None
-    try:
-        return a.as_str() if hasattr(a, "as_str") else str(a)
-    except Exception:
-        return None
+    for cast in ("as_str", "as_bool", "as_int", "as_float"):
+        fn = getattr(a, cast, None)
+        if fn is None:
+            continue
+        try:
+            return str(fn()).strip().lower()
+        except Exception:
+            continue
+    m = re.search(r"value=([^,)]*)", str(a))
+    return m.group(1).strip().lower() if m else None
 
 
 def check_camera(bp):

@@ -92,11 +92,22 @@ def test_port_match_is_exact_not_substring(monkeypatch):
 
 
 class _Attr:
+    """CARLA casts strictly: a Bool attribute raises on as_str(). Model that."""
     def __init__(self, v):
         self._v = v
 
     def as_str(self):
+        if isinstance(self._v, bool):
+            raise RuntimeError("bad attribute cast: cannot convert to String")
         return self._v
+
+    def as_bool(self):
+        if not isinstance(self._v, bool):
+            raise RuntimeError("bad attribute cast: cannot convert to Bool")
+        return self._v
+
+    def __str__(self):
+        return f"ActorAttribute(id=x,type=t,value={self._v})"
 
 
 class _Blueprint:
@@ -113,6 +124,13 @@ class _Blueprint:
 def test_camera_with_postprocess_on_and_manual_exposure_passes():
     bp = _Blueprint(enable_postprocess_effects="true", exposure_mode="manual")
     assert cd.check_camera(bp) == []
+
+
+def test_camera_bool_attribute_is_read_through_as_bool():
+    """The live server's shape: Bool for post-process, String for exposure."""
+    assert cd.check_camera(_Blueprint(enable_postprocess_effects=True, exposure_mode="manual")) == []
+    problems = cd.check_camera(_Blueprint(enable_postprocess_effects=False, exposure_mode="manual"))
+    assert any("postprocess" in p for p in problems)
 
 
 def test_camera_with_postprocess_off_is_a_violation():

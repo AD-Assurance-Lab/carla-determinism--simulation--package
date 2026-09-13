@@ -16,6 +16,7 @@ Per-repository allowances live in `.carla-determinism-audit` at the root, one pe
     allow-receiver env          # env.apply_control is this repo's choke point
     launcher scripts/simulator/carla_launch.sh
     exempt tests/test_harness.py    # fixtures that quote the patterns on purpose
+    exempt-dependency runs in ../multi-condition/.venv, which pins the package
 
 A single line is allowed with a trailing comment that says why:
 
@@ -52,6 +53,7 @@ class Finding:
 
 def read_config(root):
     receivers, launchers, exempt = set(DEFAULT_RECEIVERS), set(), set()
+    dep_reason = None
     path = os.path.join(root, CONFIG)
     if os.path.isfile(path):
         with open(path) as fh:
@@ -67,7 +69,9 @@ def read_config(root):
                     launchers.add(os.path.normpath(val))
                 elif key == "exempt" and val:
                     exempt.add(os.path.normpath(val))
-    return receivers, launchers, exempt
+                elif key == "exempt-dependency" and val:
+                    dep_reason = val
+    return receivers, launchers, exempt, dep_reason
 
 
 def _source_files(root):
@@ -147,7 +151,7 @@ def check_dependency(root):
 
 def audit(root):
     root = os.path.abspath(root)
-    receivers, launchers, exempt = read_config(root)
+    receivers, launchers, exempt, dep_reason = read_config(root)
     findings = []
     for path in _source_files(root):
         rel = os.path.normpath(os.path.relpath(path, root))
@@ -169,7 +173,8 @@ def audit(root):
                 findings.append(Finding("A-3", rel, lineno,
                                         f"{SKIP} is an escape hatch; the preflight's value "
                                         f"is that it refuses"))
-    findings += check_dependency(root)
+    if dep_reason is None:
+        findings += check_dependency(root)
     return findings
 
 

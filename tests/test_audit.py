@@ -121,6 +121,15 @@ def test_exact_version_pin_in_requirements_passes(tmp_path):
     assert cd.audit_repo(_repo(tmp_path, files)) == []
 
 
+def test_exempt_dependency_needs_a_reason(tmp_path):
+    files = dict(CLEAN)
+    files["pyproject.toml"] = '[project]\nname = "study"\ndependencies = []\n'
+    assert _codes(cd.audit_repo(_repo(tmp_path, files))) == ["A-4"]
+    assert _codes(cd.audit_repo(_repo(tmp_path, files, config="exempt-dependency\n"))) == ["A-4"]
+    assert cd.audit_repo(_repo(tmp_path, files,
+                               config="exempt-dependency runs in ../other/.venv\n")) == []
+
+
 def test_venv_and_git_are_not_scanned(tmp_path):
     files = dict(CLEAN)
     files[".venv/lib/x.py"] = "vehicle.apply_control(c)\n"
