@@ -30,7 +30,7 @@ Neither is visible in a result. Both trajectories look physically plausible.
 
 ## Install
 
-    pip install git+https://github.com/AD-Assurance-Lab/carla-determinism--simulation--package@v1.3.1
+    pip install git+https://github.com/AD-Assurance-Lab/carla-determinism--simulation--package@v1.3.2
 
 Or, for local development against a checkout beside your study repo:
 
@@ -96,6 +96,10 @@ Four layers. Each catches a different way of being wrong.
 
         allow-receiver env                          # this repo's choke point
         launcher scripts/simulator/carla_launch.sh
+        python .venv/bin/python                     # what the hook runs; default is .venv
+
+   The hook refuses the commit when no interpreter has the package. A hook that cannot
+   run must not pass.
 
 4. **A Claude Code hook.** Add to `~/.claude/settings.json`, and a session cannot start
    CarlaUE4 by hand:

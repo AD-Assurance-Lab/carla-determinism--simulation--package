@@ -163,6 +163,26 @@ def test_install_hook_writes_and_refuses_to_clobber(tmp_path):
         cd.audit.install_hook(root)
 
 
+def test_installed_hook_uses_the_configured_interpreter(tmp_path):
+    """The hook must find an interpreter that has the package, and refuse otherwise."""
+    root = _repo(tmp_path, CLEAN, config=f"python {os.path.relpath(sys.executable, tmp_path)}\n")
+    os.makedirs(os.path.join(root, ".git", "hooks"))
+    subprocess.run(["git", "init", "-q", root], check=True)
+    hook = cd.audit.install_hook(root)
+    env = {k: v for k, v in os.environ.items() if k != "CARLA_DETERMINISM_PYTHON"}
+    # A PATH with git, sed and head but NO python3, so only the configured one can work.
+    import shutil
+    bin_dir = tmp_path / "bin"; bin_dir.mkdir()
+    for tool in ("git", "sed", "head"):
+        os.symlink(shutil.which(tool), bin_dir / tool)
+    env["PATH"] = str(bin_dir)
+    ok = subprocess.run(["/bin/sh", hook], cwd=root, env=env, capture_output=True, text=True)
+    assert ok.returncode == 0, ok.stdout + ok.stderr
+    (tmp_path / cd.audit.CONFIG).write_text("")      # nothing configured, nothing on PATH
+    refused = subprocess.run(["/bin/sh", hook], cwd=root, env=env, capture_output=True, text=True)
+    assert refused.returncode == 1 and "no interpreter" in refused.stderr
+
+
 def _hook(command):
     p = subprocess.run([sys.executable, "-m", "carla_determinism", "claude-hook"],
                        input=json.dumps({"tool_input": {"command": command}}),

@@ -17,6 +17,7 @@ Per-repository allowances live in `.carla-determinism-audit` at the root, one pe
     launcher scripts/simulator/carla_launch.sh
     exempt tests/test_harness.py    # fixtures that quote the patterns on purpose
     exempt-dependency runs in ../multi-condition/.venv, which pins the package
+    python ../multi-condition/.venv/bin/python   # what the pre-commit hook runs
 
 A single line is allowed with a trailing comment that says why:
 
@@ -71,6 +72,7 @@ def read_config(root):
                     exempt.add(os.path.normpath(val))
                 elif key == "exempt-dependency" and val:
                     dep_reason = val
+                # `python <path>` is read by the installed hook script, not here.
     return receivers, launchers, exempt, dep_reason
 
 
@@ -178,16 +180,25 @@ def audit(root):
     return findings
 
 
-HOOK = f"""#!/bin/sh
+HOOK = rf"""#!/bin/sh
 {HOOK_MARK}
 # Installed by `python3 -m carla_determinism audit --install-hook`. Refuses a commit
 # that drives CARLA outside the rules. Allowances go in .carla-determinism-audit.
+#
+# The interpreter must have the package. In order: CARLA_DETERMINISM_PYTHON, a
+# `python <path>` line in .carla-determinism-audit, the repository's .venv, python3.
+# None of them importing it refuses the commit: a hook that cannot run must not pass.
 root="$(git rev-parse --show-toplevel)"
-py="${{CARLA_DETERMINISM_PYTHON:-python3}}"
-"$py" -m carla_determinism audit "$root" || {{
-    echo "commit refused by the carla-determinism audit (above)." >&2
-    exit 1
-}}
+cfg_py=$(sed -n 's/^python[[:space:]]\{{1,\}}\([^#]*\).*/\1/p' "$root/{CONFIG}" 2>/dev/null | head -1 | sed 's/[[:space:]]*$//')
+for py in "${{CARLA_DETERMINISM_PYTHON:-}}" "${{cfg_py:+$root/$cfg_py}}" "$root/.venv/bin/python" python3; do
+    [ -n "$py" ] || continue
+    if "$py" -c "import carla_determinism" >/dev/null 2>&1; then
+        exec "$py" -m carla_determinism audit "$root"
+    fi
+done
+echo "commit refused: no interpreter with carla_determinism installed." >&2
+echo "  Set CARLA_DETERMINISM_PYTHON, or add 'python <path>' to {CONFIG}." >&2
+exit 1
 """
 
 
