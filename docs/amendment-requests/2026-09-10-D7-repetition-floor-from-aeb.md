@@ -1,5 +1,8 @@
 # Amendment request to `carla-determinism` D-7, from the AEB study
 
+> **Accepted 2026-10-06 as A-1, in version 1.4.0.** The proposed wording below is now
+> D-7's "therefore" sentence, and the lock was regenerated with it.
+
 **For Zach. Not an amendment — a request, in the form section 4 asks for.** The package is
 hash-locked and lab-wide; a study does not change it. This states the measurement that
 contradicts the rule, names where it is recorded, and proposes the wording. Nothing in the

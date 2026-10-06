@@ -35,7 +35,7 @@ from .preflight import (carla_processes, check_camera, check_server, client_coun
                         server_cmdline, server_pid, serves_port)
 from .audit import audit as audit_repo
 
-__version__ = "1.3.2"
+__version__ = "1.4.0"
 RULES_PATH = Path(RULES)
 
 __all__ = [

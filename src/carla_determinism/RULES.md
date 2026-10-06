@@ -74,8 +74,13 @@ On a scene where nothing moves at all — vehicle held on the brake, zero displa
 full float precision, camera rigid, weather fixed, exposure manual — frames at the same
 index across repetitions are never bit-identical. The floor is ~30 pixels of 307,200
 differing by at most 13 levels, and a longer settle does not converge it away, so it is
-generated per frame rather than inherited. **Therefore every closed-loop number remains a
-RATE over at least 10 repetitions with a confidence interval.** D-1..D-6 shrink the noise;
+generated per frame rather than inherited. **Therefore closed-loop numbers are VERDICTS over
+repetitions, never single runs.** Under D-6's harness -- a fresh server, a new process
+and a new vehicle for every repetition -- three repetitions are a reproducibility check
+and are sufficient; repetitions that disagree make the cell VOID and are a defect to be
+found, not a rate to be estimated (D-10). Where that harness is not enforced,
+repetitions share a simulator whose state drifts, the floor of ten stands, and the
+answer is to enforce the harness rather than to raise the count. [Amendment A-1.] D-1..D-6 shrink the noise;
 they do not remove it, and no future version of this file may claim they do without a
 measurement showing a frozen scene rendering bit-identically across reps.
 
@@ -125,7 +130,16 @@ started by hand looks completely normal over RPC and quietly produces noisier re
 A rule changes only by: stating what measurement contradicts it, recording that
 measurement in the study's findings file, changing the rule, regenerating the lock in the
 same commit, and naming the amendment here. A rule may not be relaxed because a run is
-inconvenient. Amendments so far: none.
+inconvenient. Amendments so far:
+
+* **A-1, the repetition floor (D-7), on measurement from the AEB study.** 2026-10-06,
+  accepted by Zach. The measurement: across 281 ten-repetition cells, 277 were
+  unanimous, and each of the four that split, re-driven with a fresh server for every
+  repetition, traced to a defect rather than to sampling (`formal-verification--aeb--code`
+  `FINDINGS.md` F21-F24). The request and its reasoning are in
+  `docs/amendment-requests/2026-09-10-D7-repetition-floor-from-aeb.md`. Only the
+  "therefore" sentence changed; the frame measurement and the ban on claiming
+  bit-identity without evidence stand as written.
 
 ---
 

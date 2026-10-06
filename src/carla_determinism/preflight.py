@@ -244,7 +244,7 @@ def main(argv=None):
         print("  determinism lock OK (RULES.md frozen rules match RULES.lock)")
         return 0
     print("  determinism preflight OK (lock intact; D-3/D-5 verified on the live server)")
-    print("  D-7 floor remains: closed-loop numbers are still RATES over >=10 repetitions")
+    print("  D-7 (A-1): three repetitions per cell, each on a fresh server; repetitions that disagree VOID the cell")
     return 0
 
 
